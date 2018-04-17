@@ -9,6 +9,7 @@ Created on Mon Apr  9 17:47:05 2018
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
 def read_data(csv_file):
     '''
     This function reads in the data, then calls functions to explore it,
@@ -127,10 +128,10 @@ def clean_data(df):
     #From data exploration, decided to turn times_late to binary
     to_binary = 'times_late'
     binary(df, to_binary)
-    
+
     # Delete one last useless variable
     del df['PersonID']
-    
+
     df['monthly_income_groups'].fillna(0, inplace=True)
     df['age_groups'].fillna(0, inplace=True)
 
