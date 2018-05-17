@@ -116,6 +116,8 @@ def split_data(df, dep_variable, test_size, by_time, date, date_ranges):
 
             del y_test_df[date]
             del x_test_df[date]
+            del x_train_df[date]
+            del y_train_df[date]
 
             time_splits.append((x_train_df, x_test_df, y_train_df, y_test_df))
 
@@ -217,15 +219,29 @@ def to_discretize(df, var):
     The ranges are not automated.
     '''
 
-    age_bins = range(0, 110, 10)
-    income_bins = range(0, 200000, 10000)
 
-    if var == 'age':
-        df['age_groups'] = pd.cut(df[var], age_bins, labels=False)
-    elif var == 'monthly_income':
-        df['monthly_income_groups'] = pd.cut(df[var], income_bins, labels=False)
+    student_bins = range(0, 1000, 100)
+    price_bins = range(0, 3500, 100)
 
-    del df[var]
+    if var == 'students_reached':
+        df['students_reached_groups'] = pd.cut(df[var], student_bins, labels=False)
+        del df[var]
+    elif var == 'total_price_excluding_optional_support':
+        df['tp_exclude'] = pd.cut(df[var], price_bins, labels=False)
+        del df[var]
+    elif var == 'total_price_including_optional_support':
+        df['tp_include'] = pd.cut(df[var], price_bins, labels=False)
+        del df[var]
+
+
+def remove_outliers(df, cols):
+    '''
+    This function removes anything outside of three standard deviations within
+    a column
+    '''
+
+    df = df[((df[cols] - df[cols].mean()) / df[cols].std()).abs() < 3]
+    return df
 
 
 def to_binary(df, var):
