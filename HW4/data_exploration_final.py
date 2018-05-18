@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from sklearn.cross_validation import train_test_split
 from sklearn import preprocessing
 
+#### READ DATA ####
 
 def read_data(csv_file, rnm=0):
     '''
@@ -40,31 +41,7 @@ def rename_columns(column_name):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
-def explore_data(df):
-    '''
-    This function runs a series of basic exploratory commands, including:
-        - Tail and Head
-        - Summary Stats
-        - Null Values
-        - Histograms
-
-    It then calls functions that impute null values, remove instances of
-    multicollinearity, and discretize or turn varibales into binary numbers
-    '''
-
-    # Summary stats for each column
-    for i in df:
-        print()
-        print('Summary stats for', i)
-        print(df[i].describe())
-        print()
-
-    # Find nulls
-    nulls(df)
-
-    #Histograms for every column
-    plot_data(df, 'hist', None, None)
-
+####SPLIT DATA####
 
 def split_data(df, dep_variable, test_size, by_time, date, date_ranges):
     '''
@@ -123,36 +100,7 @@ def split_data(df, dep_variable, test_size, by_time, date, date_ranges):
 
         return time_splits
 
-
-def analyze_split_data(df_x_train, df_y_train):
-    '''
-    This function dives deeper into our train, test splits.
-
-    In doing so, we hope to determine which variables need to be
-    turned into binary variables, which ones need to be discretized,
-    which ones to delete based on correlations, and more.
-    '''
-
-    # Call same explore data function as before on train and test
-    print('------ Analysis for X Training Set ------')
-    explore_data(df_x_train)
-
-    print('------ Analysis for Y Training Set ------')
-    explore_data(df_y_train)
-
-
-def explore_potential_correlations(df):
-    '''
-    This function explores potential correlations between variables
-
-    This is to find instances of multicollinearity.
-    '''
-
-    axis = plt.axes()
-    sns.heatmap(df.corr(), square=True, cmap='PiYG')
-    axis.set_title('Correlation Matrix')
-    plt.show()
-
+####CLEAN DATA####
 
 def dummify(df, to_dummy):
     '''
@@ -220,8 +168,8 @@ def to_discretize(df, var):
     '''
 
 
-    student_bins = range(0, 1000, 100)
-    price_bins = range(0, 3500, 100)
+    student_bins = range(0, 1000, 250)
+    price_bins = range(0, 3500, 500)
 
     if var == 'students_reached':
         df['students_reached_groups'] = pd.cut(df[var], student_bins, labels=False)
@@ -272,6 +220,75 @@ def true_to_false(df, cols):
         del df[c]
 
 
+####EXPLORATION####
+
+def explore_data(df):
+    '''
+    This function runs a series of basic exploratory commands, including:
+        - Tail and Head
+        - Summary Stats
+        - Null Values
+        - Histograms
+
+    It then calls functions that impute null values, remove instances of
+    multicollinearity, and discretize or turn varibales into binary numbers
+    '''
+
+    # Summary stats for each column
+    for i in df:
+        print()
+        print('Summary stats for', i)
+        print(df[i].describe())
+        print()
+
+    # Find nulls
+    nulls(df)
+
+    #Histograms for every column
+    plot_data(df, 'hist', None, None)
+
+
+def analyze_split_data(df_x_train, df_y_train):
+    '''
+    This function dives deeper into our train, test splits.
+
+    In doing so, we hope to determine which variables need to be
+    turned into binary variables, which ones need to be discretized,
+    which ones to delete based on correlations, and more.
+    '''
+
+    # Call same explore data function as before on train and test
+    print('------ Analysis for X Training Set ------')
+    explore_data(df_x_train)
+
+    print('------ Analysis for Y Training Set ------')
+    explore_data(df_y_train)
+
+
+def explore_potential_correlations(df):
+    '''
+    This function explores potential correlations between variables
+
+    This is to find instances of multicollinearity.
+    '''
+
+    axis = plt.axes()
+    sns.heatmap(df.corr(), square=True, cmap='PiYG')
+    axis.set_title('Correlation Matrix')
+    plt.show()
+
+
+def count_values(df, col, sort_by='projectid', ascending=False):
+    '''
+    Find the values that make up a particular column of interst
+    '''
+    groupby = df.groupby(col, sort=False).count()
+    return groupby.sort_values(by=sort_by, ascending=False)
+
+
+#### GRAPHS #####
+
+# Generic plot function
 def plot_data(df, plot_type, var1, var2):
     '''
     This function builds a few simple plots to visualize and start to
@@ -299,8 +316,42 @@ def plot_data(df, plot_type, var1, var2):
         df[[var1, var2]].groupby(var1).mean().plot(figsize=(20,10))
         plt.show()
 
-    elif plot_type == 'pie':
-        print('Pie Chart for', var1)
-        df.plot.pie(y = var1, figsize=(20,10))
-        plt.show()
-# Things to add over time: distribution graphs
+
+# Pie plots
+def plot_pies(values, labels, colors = ['violet', 'yellow']):
+    '''
+    Plots a pie chart
+    '''
+
+    plt.pie(values, labels = labels, shadow=False, colors= colors, startangle=90, autopct='%1.1f%%')
+    plt.axis('equal')
+    plt.tight_layout()
+    plt.show()
+
+
+def pie_vals(df, cols1, ordered='projectid', labels = '', colors = ["violet", "yellow", "green", "blue", "orange"]):
+    '''
+    Pie chart for the top values in any given column
+    '''
+
+    df_to_plot = count_values(df, cols1)
+    df_to_plot = df_to_plot[ordered]
+    if labels == '':
+        labels = tuple(df_to_plot.index)
+
+    plot_pies(tuple(df_to_plot), labels, colors)
+
+
+# Crosstabs
+def graph_crosstab(df, col1, col2):
+    '''
+    Graph crosstab of two discrete variables
+
+    Inputs: Dataframe, column names (strings)
+    '''
+
+    pd.crosstab(df[col1], df[col2]).plot(kind='bar')
+    plt.title(col2 + " " + "distribution by" + " " + col1)
+    plt.xlabel(col1)
+    plt.ylabel(col2)
+    plt.show()
