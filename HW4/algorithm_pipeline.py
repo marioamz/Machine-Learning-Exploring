@@ -32,18 +32,18 @@ from sklearn.preprocessing import StandardScaler
 import itertools
 
 
-def go(x_train, x_test, y_train, y_test, grid_size, models_to_run):
+def go(x_train, x_test, y_train, y_test, grid_size, models_to_run, output_type):
 
     # define grid to use: test, small, large
     clfs, grid = define_clfs_params(grid_size)
 
     # call clf_loop and store results in results_df
-    results_df = clf_loop(models_to_run, clfs, grid, x_train, x_test, y_train, y_test)
+    results_df = clf_loop(models_to_run, clfs, grid, x_train, x_test, y_train, y_test, output_type)
 
     return results_df
 
 
-def clf_loop(models_to_run, clfs, grid, X_train, X_test, y_train, y_test):
+def clf_loop(models_to_run, clfs, grid, X_train, X_test, y_train, y_test, output_type):
     results_df =  pd.DataFrame(columns=('model_type','clf', 'parameters', 'time_used',
                                         'auc-roc','accuracy',
                                         'p_at_1','p_at_1','p_at_10', 'p_at_30',
@@ -57,7 +57,7 @@ def clf_loop(models_to_run, clfs, grid, X_train, X_test, y_train, y_test):
             try:
                 clf.set_params(**p)
                 start_time = time.time()
-                clf.fit(X_train, y_train)
+                clf.fit(X_train, y_train.ravel())
                 y_pred = clf.predict(X_test)
                 y_pred_probs = list(clf.predict_proba(X_test)[:,1])
                 end_time = time.time()
@@ -74,6 +74,7 @@ def clf_loop(models_to_run, clfs, grid, X_train, X_test, y_train, y_test):
                                                    recall_at_k(y_test_sorted,y_pred_probs_sorted,5.0),
                                                    recall_at_k(y_test_sorted,y_pred_probs_sorted,10.0),
                                                    recall_at_k(y_test_sorted,y_pred_probs_sorted,30.0)]
+                plot_precision_recall_n(y_test.ravel(),np.asarray(y_pred_probs).ravel(), clf, output_type)
 
             except IndexError:
                 print("IndexError")
@@ -121,16 +122,16 @@ Raises:
            }
 
     small_grid = {
-    'RF':{'n_estimators': [100, 10000], 'max_depth': [5,50], 'max_features': ['sqrt','log2'],'min_samples_split': [2,10], 'n_jobs':[-1]},
-    'LR': { 'penalty': ['l1','l2'], 'C': [0.00001,0.001,0.1,1,10]},
+    'RF':{'n_estimators': [200], 'max_depth': [5,10], 'max_features': ['sqrt','log2'],'min_samples_split': [2,5], 'n_jobs':[-1]},
+    'LR': { 'penalty': ['l1','l2'], 'C': [0.01,0.1,1]},
     'SGD': { 'loss': ['hinge','log','perceptron'], 'penalty': ['l2','l1','elasticnet']},
-    'ET': { 'n_estimators': [100, 10000], 'criterion' : ['gini', 'entropy'] ,'max_depth': [5,50], 'max_features': ['sqrt','log2'],'min_samples_split': [2,10], 'n_jobs':[-1]},
-    'AB': { 'algorithm': ['SAMME', 'SAMME.R'], 'n_estimators': [1,10,100,1000,10000]},
-    'GB': {'n_estimators': [100, 10000], 'learning_rate' : [0.001,0.1,0.5],'subsample' : [0.1,0.5,1.0], 'max_depth': [5,50]},
+    'ET': { 'n_estimators': [200], 'criterion' : ['gini', 'entropy'] ,'max_depth': [5,10], 'max_features': ['sqrt','log2'],'min_samples_split': [2,5], 'n_jobs':[-1]},
+    'AB': { 'algorithm': ['SAMME', 'SAMME.R'], 'n_estimators': [1,10,100]},
+    'GB': {'n_estimators': [200], 'learning_rate' : [0.01,0.1],'subsample' : [0.1,0.5], 'max_depth': [5]},
     'NB' : {},
-    'DT': {'criterion': ['gini', 'entropy'], 'max_depth': [1,5,10,20,50,100], 'max_features': [None,'sqrt','log2'],'min_samples_split': [2,5,10]},
+    'DT': {'criterion': ['gini', 'entropy'], 'max_depth': [1,5,10], 'max_features': [None,'sqrt','log2'],'min_samples_split': [2,5]},
     'SVM' :{'C' :[0.00001,0.0001,0.001,0.01,0.1,1,10],'kernel':['linear']},
-    'KNN' :{'n_neighbors': [1,5,10,25,50,100],'weights': ['uniform','distance'],'algorithm': ['auto','ball_tree','kd_tree']}
+    'KNN' :{'n_neighbors': [1,5,10],'weights': ['uniform','distance'],'algorithm': ['auto','ball_tree','kd_tree']}
            }
 
     test_grid = {
